@@ -46,7 +46,7 @@ course.extend(['love', 'Python'])  # append multiple elements to end
 pylog.info('.extend : %s', course)
 
 # insert element at index 0 (shifts everything right)
-course.insert(0, '2019 : ')
+course.insert(0, '2025 : ')
 pylog.info('.insert : %s', course)
 
 # search for first instance and remove it
