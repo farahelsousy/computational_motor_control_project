@@ -12,3 +12,6 @@ PyYAML
 deepdish
 git+https://gitlab.com/FARMSIM/farms_pylog.git
 pandas
+mujoco==3.2.3
+dm_control==1.0.23
+pywavefront
