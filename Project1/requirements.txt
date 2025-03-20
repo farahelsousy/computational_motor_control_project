@@ -1,0 +1,14 @@
+graphviz
+latex
+numpydoc
+sphinx-rtd-theme
+numpy
+nptyping
+scipy
+matplotlib==3.7.0
+tqdm
+cython
+PyYAML
+deepdish
+git+https://gitlab.com/FARMSIM/farms_pylog.git
+pandas
