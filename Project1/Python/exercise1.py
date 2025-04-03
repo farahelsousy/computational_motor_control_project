@@ -27,10 +27,12 @@ def exercise1():
         n_iterations=5001,
         video_record=False,
         log_path=prepath,
+
         compute_metrics='mechanical',
         print_metrics=False,
         return_network=True,headless=True,
         )
+    #test
     
     controller = run_single(pars)
     for i in range(0, 5001):
