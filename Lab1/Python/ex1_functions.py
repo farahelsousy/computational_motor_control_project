@@ -17,9 +17,8 @@ def analytic_function(t: float) -> float:
     This function should simply return the state
     """
     # COMPLETE CODE
-    import farms_pylog as pylog
-    pylog.warning("Analytical function must be implemented")
-    return None
+    state = 5-4*np.exp(-2*t)
+    return state
 
 
 def function(x: float, *_) -> float:
@@ -37,7 +36,7 @@ def function(x: float, *_) -> float:
     This function should return the derivative x_dot
     """
     # COMPLETE CODE
-    dxdt = None
+    dxdt = -2*(x-5)
     if dxdt is None:
         raise NotImplementedError("ODE has not been implemented")
     return dxdt

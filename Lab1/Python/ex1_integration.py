@@ -85,9 +85,10 @@ def euler_integrate(
     """
     time = np.arange(0, time_max, time_step)
     x = np.zeros([len(time), len(x0)])
-    # COMPLETE CODE
-    pylog.warning('Euler integration must be implemented')
-    return None
+    x[0] = x0
+    for i, ti in enumerate(time[:-1]):
+        x[i+1] = x[i] + time_step*fun(x[i], ti)
+    return Result(x, time)
 
 
 def ode_integrate(
@@ -109,9 +110,8 @@ def ode_integrate(
     found above (i.e. Result(x, time))
     """
     time = np.arange(0, time_max, time_step)
-    # COMPLETE CODE
-    pylog.warning('ODE integration must be implemented')
-    return None
+    x = odeint(fun, x0, time)
+    return Result(x, time)
 
 
 def ode_integrate_rk(
@@ -127,10 +127,15 @@ def ode_integrate_rk(
     """
     time = np.arange(0, time_max, time_step)
     x = np.zeros([len(time), len(x0)])
-    # COMPLETE CODE
-    pylog.warning('Runge Kutta integration must be implemented')
-    return None
-
+    x[0] = x0   
+    for i, ti in enumerate(time[:-1]):
+        # COMPLETE CODE
+        k1 = fun_rk(ti, x[i])
+        k2 = fun_rk(ti + time_step/2, x[i] + time_step/2*k1)
+        k3 = fun_rk(ti + time_step/2, x[i] + time_step/2*k2)
+        k4 = fun_rk(ti + time_step, x[i] + time_step*k3)
+        x[i+1] = x[i] + time_step/6*(k1 + 2*k2 + 2*k3 + k4)
+    return Result(x, time)
 
 def ode_integrate_dopri(
         fun_rk: Callable,
@@ -158,9 +163,14 @@ def ode_integrate_dopri(
     found above (i.e. Result(x, time))
     """
     time = np.arange(0, time_max, time_step)
-    # COMPLETE CODE
-    pylog.warning('ODE integration with RK must be implemented')
-    return None
+    x = np.zeros([len(time), len(x0)])
+    x[0] = x0
+    solver = ode(fun_rk)
+    solver.set_integrator('dopri5')
+    solver.set_initial_value(x0, time[0])
+    for i, ti in enumerate(time[:-1]):
+        x[i+1] = solver.integrate(ti + time_step)
+    return Result(x, time)
 
 
 def plot_integration_methods(**kwargs):
@@ -240,4 +250,3 @@ def plot_integration_methods(**kwargs):
             label='Euler'+ets
         )
         analytical.plot_state(figure=fig_ts, label='Analytical', marker=d)
-

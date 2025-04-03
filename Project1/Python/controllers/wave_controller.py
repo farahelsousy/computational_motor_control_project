@@ -47,5 +47,20 @@ class WaveController:
         In addition to returning the activation functions, store
         them in self.motor_out for later use offline
         """
-        return np.zeros(30)
+        time = iteration * timestep  # Current simulation time
+
+        for i in range(0, self.n_total_joints, 2):
+            time_shift = (i / self.n_total_joints) * (1 / self.pars.freq)  
+
+            # Left muscle activation (even index)
+            self.motor_out[iteration, i] = 0.5 + self.pars.amp / 2 * np.sin(2 * np.pi * self.pars.freq * (time - time_shift))
+            
+            # Right muscle activation (odd index)
+            self.motor_out[iteration, i + 1] = 0.5 - self.pars.amp / 2 * np.sin(2 * np.pi * self.pars.freq * (time - time_shift))
+
+
+        return self.motor_out[iteration]
+
+
+        
 

@@ -39,7 +39,7 @@ def exercise2(clargs):
 
     # System definition
     pylog.warning('Proper matrix A must be implemented')
-    A = np.array([[1, 0], [0, 1]])
+    A = np.array([[1, 4], [-4, -2]])
     time_total = 10
     time_step = 0.01
     x0, time = [0, 1], np.arange(0, time_total, time_step)
@@ -47,9 +47,12 @@ def exercise2(clargs):
     # Normal run
     pylog.warning('System integration must be implemented')
     # integration(x0, time, A, 'example')
+    integration(x0, time, A, 'example')
 
     # Stable point (Optional)
     pylog.warning('Stable point integration must be implemented')
+    stable_point = [0, 0]
+    integration(stable_point, time, A, 'stable_point')
 
     # Periodic
     pylog.warning('Periodic system must be implemented')
@@ -57,10 +60,7 @@ def exercise2(clargs):
     # Saddle
     pylog.warning('Saddle node system must be implemented')
 
-    # Plot
-    if not clargs.save_figures:
-        plt.show()
-
+    # Plot flow
 
 if __name__ == '__main__':
     CLARGS = parse_args()

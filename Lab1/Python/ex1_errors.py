@@ -21,10 +21,14 @@ def error(errors: np.array, n: Any = 0) -> float:
     compare them.
 
     """
-    # COMPLETE CODE
-    pylog.warning('Error computation code must be completed')
-    return 1
-
+    if n == 0:
+        return np.max(np.abs(errors))  # Max error
+    elif n == 1:
+        return np.mean(np.abs(errors))  # L1 norm
+    elif n == 2:
+        return np.sqrt(np.mean(errors**2))  # L2 norm
+    else:
+        raise ValueError("Unsupported error norm")
 
 def plot_error(
         dt_list: List[float],

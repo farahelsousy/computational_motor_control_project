@@ -29,7 +29,7 @@ def exercise1(clargs):
 
     # Setup
     time_max = 5  # Maximum simulation time
-    time_step = 0.2  # Time step for ODE integration in simulation
+    time_step = 0.2 # Time step for ODE integration in simulation
     x0 = np.array([1.])  # Initial state
 
     # Integration methods (Exercises 1.a - 1.d)
@@ -78,7 +78,19 @@ def exercise1(clargs):
         euler_timestep_small=euler_time_step,
     )
     # Error analysis (Exercise 1.e)
-    pylog.warning('Error analysis must be implemented')
+    pylog.info('Running error analysis')
+    
+    dt_list = np.logspace(-3, -1, 5)  # Time steps to evaluate
+    compute_error(
+        func=function,
+        analytical=analytic_function,
+        method=ode_integrate,
+        x0=x0,
+        dt_list=dt_list,
+        time_max=time_max,
+        label='ODE',
+        figure='Error_analysis',
+    )
 
     # To compute and plot integration error authors can use compute_error()
     # check ex1_errors.py for implementation details.
@@ -111,6 +123,9 @@ def exercise1(clargs):
     #         error() in ex1_errors.py
 
     # Show plots of all results
+    # Error analysis for each method individually
+
+
     if not clargs.save_figures:
         plt.show()
 
