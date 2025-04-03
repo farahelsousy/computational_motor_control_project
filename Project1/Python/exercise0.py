@@ -17,33 +17,40 @@ def exercise0():
     os.makedirs(log_path, exist_ok=True)
     print(log_path)
     pars = SimulationParameters(
-        n_iterations=5001,
+        n_iterations=10001,
         controller="sine",
         amp=0.3,
         twl=0.4,
         freq=3,
         compute_metrics="all",
-        headless=False,
+        headless=True,
         video_record=False,
         log_path=log_path,
         return_network=True,
+
         
     )
 
     controller = run_single(
         pars
     )
-    for i in range(0, 5001):
-        controller.step(i, pars.timestep)
-    #make 2 list of right and left indexes
-    left = []    
-    right = []    
-    for i in range(0, pars.n_total_joints, 2):
-        left.append(i)
-        right.append(i+1)
-
-    plotting_common.plot_left_right(times=controller.times,
-                                        state=controller.motor_out,left_idx=left,right_idx=right)
+    
+    plotting_common.plot_trajectory(controller=controller,label='Trajectory')
+    """
+    plotting_common.plot_left_right(
+        controller.times,
+        controller.motor_out,
+        controller.motor_l,
+        controller.motor_r,
+    )
+    plotting_common.plot_time_histories(
+      
+    controller.times[2500:], 
+    controller.joints_positions[2500:], 
+    labels=[f"Joint {i+1}" for i in range(controller.joints_positions.shape[1])]
+    )
+    print(np.mean(controller.joints_positions, axis=0))
+    """
 if __name__ == '__main__':
 
     exercise0()

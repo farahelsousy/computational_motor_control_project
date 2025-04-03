@@ -30,37 +30,37 @@ class WaveController:
         # indexes of the right muscle activations (optional)
         self.motor_r = self.motor_l + 1
 
-    def step(self, iteration, timestep, pos=None):
-        """
-        Step function. This function passes the activation functions of the muscle model
-        Inputs:
-        - iteration - iteration index
-        - time - time vector
-        - timestep - integration timestep
-        - pos (not used) - joint angle positions
-
-        Implement here the control step function,
-        it should return an array of 2*n_joint=30 elements,
-        even indexes (0,2,4,...) = left muscle activations
-        odd indexes (1,3,5,...) = right muscle activations
-
-        In addition to returning the activation functions, store
-        them in self.motor_out for later use offline
-        """
-        time = iteration * timestep  # Current simulation time
-
-        for i in range(0, self.n_total_joints, 2):
-            time_shift = (i / self.n_total_joints) * (1 / self.pars.freq)  
-
-            # Left muscle activation (even index)
-            self.motor_out[iteration, i] = 0.5 + self.pars.amp / 2 * np.sin(2 * np.pi * self.pars.freq * (time - time_shift))
-            
-            # Right muscle activation (odd index)
-            self.motor_out[iteration, i + 1] = 0.5 - self.pars.amp / 2 * np.sin(2 * np.pi * self.pars.freq * (time - time_shift))
-
-
-        return self.motor_out[iteration]
-
-
         
+    def step(self, iteration, timestep, pos=None):
+            """
+            Step function. This function passes the activation functions of the muscle model
+            Inputs:
+            - iteration - iteration index
+            - time - time vector
+            - timestep - integration timestep
+            - pos (not used) - joint angle positions
 
+            Implement here the control step function,
+            it should return an array of 2*n_joint=30 elements,
+            even indexes (0,2,4,...) = left muscle activations
+            odd indexes (1,3,5,...) = right muscle activations
+
+            In addition to returning the activation functions, store
+            them in self.motor_out for later use offline
+            """
+            # Define parameters
+            A = self.pars.amp           # Amplitude
+            f = self.pars.freq          # Frequency
+            TWL = self.pars.twl         # Wave length
+            t = iteration*timestep      # Time vector
+
+
+
+            for i in self.motor_l:
+                self.motor_out[iteration,i] = 0.5 + A/2*np.sin(2*np.pi*(f*t-TWL*(i)/self.n_oscillators))
+            
+            for i in self.motor_r:
+                self.motor_out[iteration,i] = 0.5 - A/2*np.sin(2*np.pi*(f*t-TWL*(i)/self.n_oscillators))
+
+
+            return self.motor_out[iteration,:]
