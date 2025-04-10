@@ -91,6 +91,48 @@ class AbstractOscillatorController:
         # Implement equation here
         dphases = np.zeros(n_oscillators)
         damplitudes = np.zeros(n_oscillators)
+
+        drive = self.pars.drive
+        freq_gain = self.pars.cpg_frequency_gain
+        freq_offset = self.pars.cpg_frequency_offset
+        amp_gain = self.pars.cpg_amplitude_gain
+        w_body2body = self.pars.weights_body2body
+        w_body2body_segment = self.pars.weights_body2body_contralateral
+        phase_lag_body = self.pars.phase_lag_body
+        amp_rate = self.pars.amplitude_rates
+        n_joints = self.pars.n_joints
+
+        #  nominal frequency and amplitudes
+        f = freq_gain * drive + freq_offset
+        R = np.mean(amp_gain) * drive
+
+        #  phase lag between adjacent oscillators
+        phi_lag = phase_lag_body / (n_joints - 1)
+
+        for i in range(n_oscillators):
+            theta = state[i]
+            r_i = state[i + n_oscillators]
+            coupling_sum = 0    
+            for j in range(n_oscillators):
+                if i == j:
+                    continue
+                theta_j = state[j]
+                r_j = state[j + n_oscillators]
+
+                if abs(i - j) == 2:
+                    w_ij = w_body2body
+                    phi_ij = np.sign(i - j) * phi_lag
+                elif abs(i - j) == 1:
+                    w_ij = w_body2body_segment
+                    phi_ij = np.sign(i - j) * np.pi
+                else:
+                    w_ij = 0
+                    phi_ij = 0
+                coupling_sum += w_ij * r_j * np.cos(theta - theta_j + phi_ij)
+            dphases[i] = 2 * np.pi * f + coupling_sum
+            damplitudes[i] = amp_rate * (R - r_i) 
+        
+
         return np.concatenate([dphases, damplitudes])
 
     def motor_output(self, iteration):
@@ -118,7 +160,21 @@ class AbstractOscillatorController:
         i.e. set only self.motor_out[iteration,:]
         """
         motor_output = np.zeros(self.n_oscillators)
+        G = self.pars.motor_output_scaling
+        for i in range(self.pars.n_joints):
+            phase_l = self.state[iteration, self.oscillator_phase_l[i]]
+            phase_r = self.state[iteration, self.oscillator_phase_r[i]]
+
+            amp_l = self.state[iteration, self.oscillator_amplitude_l[i]] * self.pars.drive
+            amp_r = self.state[iteration, self.oscillator_amplitude_r[i]] * self.pars.drive
+
+            strength_l = G * amp_l * np.cos(phase_l)
+            strength_r = G * amp_r * np.cos(phase_r)
+
+            motor_output[self.motor_l[i]] = strength_l
+            motor_output[self.motor_r[i]] = strength_r
         self.motor_out[iteration, :] = motor_output
+
 
         return motor_output
 
@@ -143,5 +199,12 @@ class AbstractOscillatorController:
         which includes updated motor outputs from active joints and the motor outputs for passive joints.
         """
         self.state[iteration+1, :] = self.state[iteration, :]
-        return (np.zeros(30))
+        self.dstate = self.f(self.state[iteration, :])
+        self.state[iteration+1, :] += timestep * self.dstate
+        self.motor_output(iteration +1)
+        motor_output_all = np.concatenate(
+            [self.motor_out[iteration +1, :], self.zeros4])
+        return motor_output_all
+
+
 

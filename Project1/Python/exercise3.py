@@ -2,6 +2,7 @@
 from util.run_closed_loop import run_single
 from simulation_parameters import SimulationParameters
 import os
+import numpy as np
 import farms_pylog as pylog
 import matplotlib.pyplot as plt
 from plotting_common import plot_time_histories
@@ -21,6 +22,14 @@ def exercise3():
         compute_metrics=None,
         print_metrics=False,
         return_network=True,
+        headless=False,
+        fast=False,
+        drive = 2.0  ,
+        weights_body2body = 15  ,
+        weights_body2body_contralateral = 5  
+        
+
+
     )
 
     pylog.info("Running the simulation")

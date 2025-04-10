@@ -25,7 +25,7 @@ def exercise1():
         joint_poses=0.3*np.ones(15),
         animal_pose=[0, 0, -0.01, 0, 0, -1.570796327],
         headless=True,
-        n_iterations=5001,
+        n_iterations=10001,
         video_record=False,
         log_path=prepath,
         controller="sine",
