@@ -46,13 +46,12 @@ def main(plot=True):
     # metrics = controller.metrics
 
     # # mechanical data
-    # links_positions       = controller.links_positions # the link positions
-    # links_velocities      = controller.links_velocities # the link velocities
-    # joints_active_torques = controller.joints_active_torques # the joint active torques
-    # joints_velocities     = controller.joints_velocities # the joint velocities
-    # joints_positions      = controller.joints_positions # the joint positions
+    # links_positions       = controller.links_positions          # the link positions
+    # links_velocities      = controller.links_velocities         # the link velocities
+    # joints_active_torques = controller.joints_active_torques    # the joint active torques
+    # joints_velocities     = controller.joints_velocities        # the joint velocities
+    # joints_positions      = controller.joints_positions         # the joint positions
 
 
 if __name__ == '__main__':
     main(plot=True)
-

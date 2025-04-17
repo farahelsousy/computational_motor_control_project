@@ -41,5 +41,6 @@ class EmptyController:
         In addition to returning the activation functions, store
         them in self.state for later use offline
         """
+
         return self.state[iteration, :]
 

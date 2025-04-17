@@ -22,9 +22,6 @@ class WaveController:
 
         # motor output array for recording the motor outputs
         self.motor_out = np.zeros((pars.n_iterations, self.n_oscillators))
-        pylog.warning(
-            "Implement below the step function following the instructions here and in the report")
-
         # indexes of the left muscle activations (optional)
         self.motor_l = 2*np.arange(self.n_total_joints)
         # indexes of the right muscle activations (optional)
@@ -47,20 +44,20 @@ class WaveController:
         In addition to returning the activation functions, store
         them in self.motor_out for later use offline
         """
-        time = iteration * timestep  # Current simulation time
-
-        for i in range(0, self.n_total_joints, 2):
-            time_shift = (i / self.n_total_joints) * (1 / self.pars.freq)  
-
-            # Left muscle activation (even index)
-            self.motor_out[iteration, i] = 0.5 + self.pars.amp / 2 * np.sin(2 * np.pi * self.pars.freq * (time - time_shift))
-            
-            # Right muscle activation (odd index)
-            self.motor_out[iteration, i + 1] = 0.5 - self.pars.amp / 2 * np.sin(2 * np.pi * self.pars.freq * (time - time_shift))
+        # Define parameters
+        A = self.pars.amp           # Amplitude
+        f = self.pars.freq          # Frequency
+        TWL = self.pars.twl         # Wave length
+        t = iteration*timestep      # Time vector
 
 
-        return self.motor_out[iteration]
 
-
+        for i in self.motor_l:
+            self.motor_out[iteration,i] = 0.5 + A/2*np.sin(2*np.pi*(f*t-TWL*(i)/self.n_oscillators))
         
+        for i in self.motor_r:
+            self.motor_out[iteration,i] = 0.5 - A/2*np.sin(2*np.pi*(f*t-TWL*(i)/self.n_oscillators))
+
+
+        return self.motor_out[iteration,:]
 

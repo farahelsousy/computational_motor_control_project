@@ -20,6 +20,7 @@ def exercise_single(**kwargs):
         compute_metrics=None,
         print_metrics=False,
         return_network=True,
+        animal_pose = [0.0, 0.0, -0.01, 0.0, 0, -1.570796327],
         **kwargs
     )
 
@@ -30,6 +31,6 @@ def exercise_single(**kwargs):
 
 
 if __name__ == '__main__':
-    exercise_single(headless=False)
+    exercise_single(headless=True)
     plt.show()
 

@@ -25,13 +25,17 @@ def exercise_multiple():
             I=I,
             b=b,
             headless=True,
-            print_metrics=False
+            print_metrics=False,
+            controller="sine",	
+            amp=0.01,
+            twl=0.1,
+            freq=1,            
         )
         for i, I in enumerate(np.linspace(0.05, 3, nsim))
         for j, b in enumerate(np.linspace(8, 12, nsim))
     ]
 
-    run_multiple(pars_list, num_process=8)
+    run_multiple(pars_list, num_process=4)
 
 
 if __name__ == '__main__':
