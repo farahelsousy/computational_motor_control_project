@@ -50,14 +50,11 @@ class WaveController:
         TWL = self.pars.twl         # Wave length
         t = iteration*timestep      # Time vector
 
-
-
         for i in self.motor_l:
-            self.motor_out[iteration,i] = 0.5 + A/2*np.sin(2*np.pi*(f*t-TWL*(i)/self.n_oscillators))
+            self.motor_out[iteration,i] = 0*0.5 + A/2*np.sin(2*np.pi*(f*t-TWL*(i/2)/self.n_oscillators))
         
         for i in self.motor_r:
-            self.motor_out[iteration,i] = 0.5 - A/2*np.sin(2*np.pi*(f*t-TWL*(i)/self.n_oscillators))
-
+            self.motor_out[iteration,i] = 0*0.5 - A/2*np.sin(2*np.pi*(f*t-TWL*((i-1)/2)/self.n_oscillators))
 
         return self.motor_out[iteration,:]
 
