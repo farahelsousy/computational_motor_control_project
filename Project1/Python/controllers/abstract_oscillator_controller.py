@@ -71,7 +71,7 @@ class AbstractOscillatorController:
         f = self.pars.cpg_frequency_gain * drive + self.pars.cpg_frequency_offset
         w_bb = self.pars.weights_body2body
         w_bbc = self.pars.weights_body2body_contralateral
-        phi_lag = self.pars.phase_lag_body / (self.n_actuated_joints - 1) if self.n_actuated_joints > 1 else 0
+        phi_lag = self.pars.phase_lag_body / (self.pars.n_total_joints - 1)
         amp_rate = self.pars.amplitude_rates
         amp_gain = self.pars.cpg_amplitude_gain
 
@@ -90,7 +90,7 @@ class AbstractOscillatorController:
                 if abs(i - j) == 2:
                     w_ij, φ_ij = w_bb, np.sign(i - j) * phi_lag
                 elif (j - i == 1) and (i % 2 == 0):
-                    w_ij, φ_ij = w_bbc, -np.pi
+                    w_ij, φ_ij = w_bbc, np.sign(i-j)*np.pi
                 else:
                     w_ij, φ_ij = 0, 0
 
@@ -130,9 +130,13 @@ class AbstractOscillatorController:
         return out
 
     def step_euler(self, iteration, timestep):
-        """Perform one Euler integration step and return full muscle activation vector."""
-        self.state[iteration+1, :] = self.state[iteration, :]
-        self.dstate = self.f(self.state[iteration, :])
-        self.state[iteration+1, :] += timestep * self.dstate
-        self.motor_output(iteration+1)
-        return np.concatenate([ self.motor_out[iteration+1, :], self.zeros4 ])
+        """One Euler step; returns 30-long muscle-activation vector."""
+        # ---- integrate ----
+        dstate = self.f(self.state[iteration, :])
+        self.state[iteration + 1, :] = self.state[iteration, :] + timestep * dstate
+
+        # ---- compute & log motor output for the UPDATED state ----
+        motor_active = self.motor_output(iteration + 1)
+
+        # ---- pad four zeros for the passive tail joints ----
+        return np.concatenate([motor_active, self.zeros4])
