@@ -1,122 +1,203 @@
-# exercise3.py (Corrected Q3.4 Loading Path)
+"""
+Exercise 3 – Abstract-oscillator sanity check + drive sweep
+—————————————————————————————————————————
+"""
 
-import numpy as np
-import matplotlib.pyplot as plt
 import os
-import farms_pylog as pylog
-import pandas as pd
 import json
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import farms_pylog as pylog
 
-# Core simulation and analysis utilities
-from util.run_closed_loop import run_single, pretty, NumpyEncoder # Import pretty/encoder if they are here
-from util.rw import load_object # Confirmed available
+from util.run_closed_loop import run_single, pretty, NumpyEncoder
+from util.rw import load_object
 from simulation_parameters import SimulationParameters
-from plotting_common import plot_time_histories, plot_left_right
 
-# Ensure ffmpeg is installed and added to your system's PATH for video recording (Q3.3).
+
+# --------------------------------------------------------------------- #
+#                        small helper utilities                         #
+# --------------------------------------------------------------------- #
+def match(a, b):
+    """truncate a & b (1-D) to the same min length"""
+    lim = min(len(a), len(b))
+    return a[:lim], b[:lim]
+
 
 def exercise3():
     pylog.info("Starting Exercise 3 (Q3.3 and Q3.4)")
 
-    # =========================================================================
-    #                       Part 1: Q3.3 Implementation
-    # =========================================================================
-    pylog.info("\n===== Running Q3.3: Default CPG Simulation and Analysis =====")
+    # ───────────────────────────────────────────────────────────────── Q3.3
+    pylog.info("\n===== Running Q3.3: Default CPG simulation =====")
 
-    log_path_q3_3 = './logs/exercise3/q3_3_default/'
-    video_name_q3_3 = 'q3_3_cpg_swim_5s'
-    os.makedirs(log_path_q3_3, exist_ok=True)
+    log_path = "./logs/exercise3/q3_3_default/"
+    video_name = "q3_3_cpg_swim_5s"
+    os.makedirs(log_path, exist_ok=True)
 
-    # Set parameters for Q3.3
-    pars_q3_3 = SimulationParameters(
-        n_iterations=5001,
-        controller='abstract oscillator',
-        log_path=log_path_q3_3,
+    pars = SimulationParameters(
+        n_iterations=10001,
+        controller="abstract oscillator",
+        log_path=log_path,
         simulation_i=0,
-        compute_metrics='all',
+        compute_metrics="all",
         print_metrics=False,
         return_network=True,
         headless=False,
         video_record=True,
-        video_name=video_name_q3_3,
+        video_name=video_name,
         video_fps=50,
     )
 
-    pylog.info("Starting simulation for Q3.3...")
-    controller = None
+    pylog.info("Starting simulation …")
     try:
-        controller = run_single(pars_q3_3)
+        controller = run_single(pars)
+    except Exception as e:
+        pylog.error(f"Simulation failed: {e}", exc_info=True)
+        return
 
-        if controller and hasattr(controller, 'metrics'):
-            pylog.info(f"Q3.3 Simulation finished. Controller object returned.")
-            pylog.info(f"Q3.3 Video saved as: {log_path_q3_3}/{video_name_q3_3}.mp4 (if ffmpeg is configured)")
-            pylog.info("Q3.3 Metrics (from returned controller object):")
-            try: pretty(controller.metrics)
-            except NameError: print(json.dumps(controller.metrics, indent=4, cls=NumpyEncoder))
+    # ---------------- sanity & plots ----------------
+    if controller is None:
+        pylog.error("Controller object not returned – aborting.")
+        return
 
-            pylog.info("Generating plots for Q3.3...")
-            # Plotting code as before...
-            # 1. Oscillator Phases Evolution
-            plt.figure("Q3.3 Oscillator Phases")
-            plot_time_histories(controller.times, controller.state[:, controller.oscillator_phase_all] % (2 * np.pi), cm="jet", offset=0.5, ylabel="Phase [rad]")
-            plt.suptitle("Q3.3: Oscillator Phases Evolution"); plt.ylim(0, 2*np.pi); plt.grid(True)
-            # 2. Oscillator Amplitudes Evolution
-            plt.figure("Q3.3 Oscillator Amplitudes")
-            plot_time_histories(controller.times, controller.state[:, controller.oscillator_amplitude_all], cm="jet", offset=0.05, ylabel="Amplitude")
-            plt.suptitle("Q3.3: Oscillator Amplitudes Evolution"); plt.grid(True)
-            # 3. Motor Output (Left and Right)
-            plt.figure("Q3.3 Motor Output (Left/Right)")
-            plot_left_right(controller.times, controller.motor_out, controller.motor_l, controller.motor_r, cm="jet", offset=0.1)
-            plt.suptitle("Q3.3: Motor Output Evolution (Left/Right)"); plt.grid(True)
-            # 4. Motor Output Difference (Left - Right per joint)
-            motor_diff = controller.motor_out[:, controller.motor_l] - controller.motor_out[:, controller.motor_r]
-            plt.figure("Q3.3 Motor Output Difference (L-R)")
-            plot_time_histories(controller.times, motor_diff, cm="jet", offset=0.1, ylabel="Activation Difference (L-R)")
-            plt.suptitle("Q3.3: Motor Output Difference Evolution (L-R per joint)"); plt.grid(True)
-            # 5. Zebrafish Joint Angles Evolution
-            if hasattr(controller, 'joints_positions'):
-                if controller.joints_positions.shape[1] >= pars_q3_3.n_joints:
-                    active_joint_angles = controller.joints_positions[:, :pars_q3_3.n_joints]
-                    time_vector = controller.times[:active_joint_angles.shape[0]]
-                    plt.figure("Q3.3 Joint Angles")
-                    plot_time_histories(time_vector, active_joint_angles, cm="jet", offset=0.1, ylabel="Joint Angle [rad]")
-                    plt.suptitle("Q3.3: Zebrafish Active Joint Angles Evolution"); plt.grid(True)
-                else: pylog.warning(f"Q3.3 controller.joints_positions shape unexpected.")
-            else: pylog.warning("Q3.3: 'joints_positions' not found in controller.")
+    # row-count sanity
+    expected_len = pars.n_iterations
+    if controller.motor_out.shape[0] != expected_len:
+        pylog.warning(
+            f"motor_out rows = {controller.motor_out.shape[0]}, "
+            f"expected {expected_len} → check main loop termination."
+        )
 
-            pylog.info("Displaying Q3.3 plots (Close them to continue to Q3.4)...")
-            plt.show(block=True)
-            pylog.info("Q3.3 Analysis Complete.")
-        else: pylog.error("Q3.3: Failed to retrieve valid controller object from run_single.")
-    except Exception as e: pylog.error(f"Q3.3 failed! Error: {e}", exc_info=True)
+    # ══ metrics printout ══
+    if hasattr(controller, "metrics"):
+        try:
+            pretty(controller.metrics)
+        except NameError:
+            print(json.dumps(controller.metrics, indent=4, cls=NumpyEncoder))
 
-    # =========================================================================
-    #                       Part 2: Q3.4 Implementation
-    # =========================================================================
-    pylog.info("\n===== Running Q3.4: Exploring Effect of Drive Parameter =====")
+    # ---------- 0) phase heat-map ----------
+    plt.figure("Q3.3 – Phase heatmap", figsize=(6, 4))
+    phase_mat = controller.state[:, controller.oscillator_phase_all] % (2 * np.pi)
+    plt.imshow(
+        phase_mat.T,
+        aspect="auto",
+        cmap="twilight",
+        extent=[
+            controller.times[0],
+            controller.times[-1],
+            0,
+            controller.oscillator_phase_all.size,
+        ],
+    )
+    plt.colorbar(label="Phase (rad)")
+    plt.ylabel("Oscillator index (0-25)")
+    plt.xlabel("Time [s]")
+    plt.title("Wrapped phases – quick visual sanity")
 
-    base_log_path_q3_4 = './logs/exercise3/q3_4_drive_sweep/'
-    # No need to create base path, run_single should handle subdirs if needed,
-    # and save_object saves files directly in base path anyway.
+    # ---------- 1) subset line plots ----------
+    n_show = min(6, controller.oscillator_phase_all.size)
 
+    # phases
+    plt.figure("Q3.3 – Phases (subset)", figsize=(8, 4))
+    for idx in range(n_show):
+        t, y = match(controller.times, controller.state[:, controller.oscillator_phase_all[idx]] % (2 * np.pi))
+        plt.plot(t, y, label=f"osc {idx}")
+    plt.xlabel("Time [s]")
+    plt.ylabel("Phase (rad)")
+    plt.ylim(0, 2 * np.pi)
+    plt.title("First 6 oscillator phases")
+    plt.legend(fontsize="small", ncol=2)
+    plt.grid(True)
+
+    # amplitudes
+    plt.figure("Q3.3 – Amplitudes (subset)", figsize=(8, 4))
+    for idx in range(n_show):
+        t, y = match(controller.times, controller.state[:, controller.oscillator_amplitude_all[idx]])
+        plt.plot(t, y, label=f"{idx}")
+    plt.xlabel("Time [s]")
+    plt.ylabel("Amplitude")
+    plt.title("First 6 oscillator amplitudes")
+    plt.legend(fontsize="small", ncol=2)
+    plt.grid(True)
+
+    # motor output L/R first four joints
+    plt.figure("Q3.3 – Motor output joints 0-3", figsize=(8, 4))
+    for i in range(4):
+        t, l = match(controller.times, controller.motor_out[:, controller.motor_l[i]])
+        t, r = match(controller.times, controller.motor_out[:, controller.motor_r[i]])
+        plt.plot(t, l, "--", label=f"L{i}")
+        plt.plot(t, r, "-", label=f"R{i}")
+    plt.xlabel("Time [s]")
+    plt.ylabel("Activation")
+    plt.title("Motor output (first four joints)")
+    plt.legend(fontsize="small", ncol=4)
+    plt.grid(True)
+# ──────────────────────────────────────────────────────────────
+#  Travelling-wave overlay plot (like Lecture-7 slide)
+# ───────────────────────────────────────────────────────────────
+#  Travelling-wave overlay for JOINT ANGLES  (all 13 active joints)
+# ───────────────────────────────────────────────────────────────
+    if hasattr(controller, "joints_positions"):
+        plt.figure("Q3.3 – Joint-angle travelling wave", figsize=(9, 4))
+
+        # joint_positions shape: (time_steps, 15) → take first 13 (active) joints
+        joint_ang = controller.joints_positions[:, :13]    # time × 13
+
+        # optional: discard the very first 0.4 s (lock-in transient)
+        mask = controller.times >= 0.4
+        t_plot = controller.times[mask]
+        ang_plot = joint_ang[mask]
+
+        # GLOBAL normalisation so amplitudes stay proportional
+        amp_global = np.max(np.abs(ang_plot)) + 1e-12
+        wave = ang_plot / amp_global
+
+        for j in range(wave.shape[1]):          # j = 0…12
+            plt.plot(t_plot, wave[:, j] + j, lw=2)
+
+        plt.yticks(np.arange(wave.shape[1]), [f"j{j}" for j in range(wave.shape[1])])
+        plt.xlabel("Time [s]")
+        plt.ylabel("Joint index (offset vertically)")
+        plt.title("Travelling wave of joint angles – all 13 active joints")
+        plt.grid(ls=":")
+        plt.tight_layout()
+    else:
+        pylog.warning("controller has no 'joints_positions'; joint-angle wave plot skipped.")
+
+    # L-R difference subset
+    plt.figure("Q3.3 – Motor diff (L-R)", figsize=(8, 4))
+    motor_diff = controller.motor_out[:, controller.motor_l[:n_show]] - controller.motor_out[:, controller.motor_r[:n_show]]
+    for i in range(n_show):
+        t, diff = match(controller.times, motor_diff[:, i])
+        plt.plot(t, diff, label=f"joint {i}")
+    plt.xlabel("Time [s]")
+    plt.ylabel("L − R")
+    plt.title("Motor output difference (joints 0-5)")
+    plt.legend(fontsize="small", ncol=3)
+    plt.grid(True)
+
+    plt.tight_layout()
+    pylog.info("Close figures to continue to Q3.4 …")
+    plt.show(block=True)
+
+    # ───────────────────────────────────────────────────────────────── Q3.4
+    pylog.info("\n===== Running Q3.4: Drive sweep =====")
+
+    base_log_path = "./logs/exercise3/q3_4_drive_sweep/"
     drive_values = np.arange(1.0, 8.1, 1.0)
     pylog.info(f"Testing drive values: {drive_values}")
-    results_list_q3_4 = []
+    os.makedirs(base_log_path, exist_ok=True)
 
+    results_list = []
     for i, drive in enumerate(drive_values):
-        pylog.info(f"\n--- Q3.4: Running simulation for drive = {drive:.1f} ---")
-        # Define log path for this run, primarily for save_object's reference,
-        # even though it saves the file one level up.
-        # Providing the specific subdir helps keep logs potentially organized if other
-        # files ARE saved there by run_single (e.g., sensors_data if not returned).
-        current_log_path_for_run_single = os.path.join(base_log_path_q3_4, f'drive_{drive:.1f}')
-
-        pars_q3_4 = SimulationParameters(
+        pylog.info(f"— drive = {drive:.1f} —")
+        current_path = os.path.join(base_log_path, f"drive_{drive:.1f}")
+        pars_ds = SimulationParameters(
             n_iterations=5001,
-            controller='abstract oscillator',
-            log_path=current_log_path_for_run_single, # Pass the intended subdir path
+            controller="abstract oscillator",
+            log_path=current_path,
             simulation_i=i,
-            compute_metrics='all',
+            compute_metrics="all",
             print_metrics=False,
             return_network=False,
             headless=True,
@@ -124,83 +205,56 @@ def exercise3():
             drive=drive,
         )
 
+        run_single(pars_ds)
+
+        fname = f"drive_{drive:.1f}controller{pars_ds.simulation_i}"
         try:
-            run_single(pars_q3_4)
+            obj = load_object(os.path.join(base_log_path, fname))
+        except FileNotFoundError:
+            pylog.error(f"Results not found for drive={drive:.1f}")
+            continue
 
-            # --- FIX: Construct the path where the file was ACTUALLY saved ---
-            actual_filename = f'drive_{drive:.1f}controller{pars_q3_4.simulation_i}'
-            # Join with the BASE path, not the subdir path passed to run_single
-            controller_filename = os.path.join(base_log_path_q3_4, actual_filename)
-            # --- End FIX ---
+        if hasattr(obj, "metrics"):
+            m = obj.metrics
+            m["drive"] = drive
+            results_list.append(m)
+            # quick numeric sanity
+            if "neur_frequency" in m:
+                pylog.info(f"  neur_frequency ≈ {m['neur_frequency']:.2f} Hz")
+        else:
+            pylog.error(f"Loaded object missing metrics for drive={drive:.1f}")
 
-            pylog.info(f"Loading controller results from: {controller_filename}")
-            loaded_controller = load_object(controller_filename)
+    if not results_list:
+        pylog.error("No metrics collected – skipping plot.")
+        return
 
-            if hasattr(loaded_controller, 'metrics'):
-                metrics = loaded_controller.metrics
-                metrics['drive'] = drive
-                results_list_q3_4.append(metrics)
-                pylog.info(f"Q3.4 Drive {drive:.1f}: Success. Metrics loaded.")
-            else: pylog.error(f"Q3.4 Drive {drive:.1f}: Loaded object missing 'metrics'.")
+    df = pd.DataFrame(results_list).set_index("drive")
+    print("\nCollected metrics:\n", df)
 
-        except FileNotFoundError: pylog.error(f"Q3.4 Drive {drive:.1f}: File not found at {controller_filename}.")
-        except Exception as e: pylog.error(f"Q3.4 Drive {drive:.1f}: Sim/Load failed! Error: {e}", exc_info=True)
+    metrics_to_plot = {
+        "neur_frequency": "Neural Frequency [Hz]",
+        "neur_amp": "Mean Neural Amplitude",
+        "mech_speed_fwd": "Forward Speed",
+        "mech_cot": "Cost of Transport",
+        "mech_energy": "Energy Consumption",
+    }
 
-# --- Q3.4 Analysis ---
-    if not results_list_q3_4:
-        pylog.error("Q3.4: No results collected. Skipping analysis plots.")
-    else:
-        # Convert results to DataFrame
-        results_df_q3_4 = pd.DataFrame(results_list_q3_4).set_index('drive')
+    plt.figure("Drive-sweep metrics", figsize=(10, 6))
+    for idx, (key, label) in enumerate(metrics_to_plot.items(), 1):
+        if key not in df.columns:
+            pylog.warning(f"Metric '{key}' missing – skip plot.")
+            continue
+        plt.subplot(3, 2, idx)
+        plt.plot(df.index, df[key], "o-")
+        plt.xlabel("Drive")
+        plt.ylabel(label)
+        plt.title(label + " vs Drive")
+        plt.grid(True)
+    plt.tight_layout()
+    plt.show()
 
-        print("\n--- Q3.4 Collected Metrics ---")
-        pd.set_option('display.max_rows', 500); pd.set_option('display.max_columns', 500); pd.set_option('display.width', 1000)
-        print(results_df_q3_4)
+    pylog.info("Exercise 3 complete.")
 
-        # Plotting key metrics vs. drive
-        metrics_to_plot = { # Define metrics to plot against drive
-            'neur_frequency': 'Neural Frequency [Hz]', 'neur_amp': 'Mean Neural Amplitude',
-            'neur_twl': 'Neural Total Wave Lag',
-            'mech_mean_frequency': 'Mean Mech. Frequency [Hz]', 'mech_mean_amplitude': 'Mean Mech. Amplitude [rad]',
-            'mech_speed_fwd': 'Forward Speed', 'mech_speed_lat': 'Lateral Speed',
-            'mech_cot': 'Cost of Transport', 'mech_energy': 'Energy Consumption',
-            'mech_torque': 'Sum of Torques (Effort)', 'mech_twl': 'Mechanical Total Wave Lag',
-        }
-        num_plots = len(metrics_to_plot)
-        plt.figure("Q3.4 Metrics vs Drive", figsize=(12, max(8, 2.5 * ((num_plots + 1) // 2) ))) # Adjust figure size if needed
 
-        # --- Define smaller font sizes ---
-        axis_label_fontsize = 8
-        title_fontsize = 10
-        tick_label_fontsize = 8
-        # --- End Define ---
-
-        plot_idx = 1
-        for metric_key, ylabel in metrics_to_plot.items():
-            if metric_key in results_df_q3_4.columns:
-                try:
-                    plot_data = results_df_q3_4[metric_key].astype(float) # Ensure numeric type
-                    plt.subplot((num_plots + 1) // 2, 2, plot_idx)
-                    plt.plot(plot_data.index, plot_data.values, 'o-') # Use .values
-
-                    # --- Apply smaller font sizes ---
-                    plt.xlabel("Drive", fontsize=axis_label_fontsize)
-                    plt.ylabel(ylabel, fontsize=axis_label_fontsize)
-                    plt.title(f"{ylabel} vs. Drive", fontsize=title_fontsize)
-                    plt.tick_params(axis='both', which='major', labelsize=tick_label_fontsize) # Adjust tick labels too
-                    # --- End Apply ---
-
-                    plt.grid(True)
-                    plot_idx += 1
-                except Exception as plot_err:
-                     pylog.warning(f"Q3.4: Could not plot metric '{metric_key}'. Error: {plot_err}")
-            else:
-                pylog.warning(f"Q3.4: Metric '{metric_key}' not found in DataFrame columns. Skipping plot.")
-
-        plt.tight_layout(pad=2.0) # Use tight_layout to adjust spacing
-        pylog.info("Displaying Q3.4 plots...")
-        plt.show()
-    pylog.info("\nExercise 3 Complete. Analyze plots and DataFrames for your report.")
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     exercise3()
