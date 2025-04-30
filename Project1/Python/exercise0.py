@@ -95,16 +95,15 @@ if __name__ == '__main__':
     # Define values to be examined:
     parameters = np.array([[0.3,2,1.5],[1,4,0.5]]) # [[Amplitude, Frequency, Twl],...]
 
-    # Define wether to print metrics and/or plot the results
+    # Define whether to print metrics and/or plot the results
     metrics = False
     plot = True
 
+    # Run exerise0
     exercise0(parameters=parameters,metrics=True,headless=True)
 
-    #plt.show()
-
+    # Plot the results of the simulation if selected. 
     if plot:
-        # Plot the results of the simulation
         plotsExercise0(n_sim=np.size(parameters,0))
 
 

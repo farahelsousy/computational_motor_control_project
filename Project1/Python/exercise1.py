@@ -1,6 +1,6 @@
 
-from plotting_common import plot_time_histories, plot_1d, save_figures
-from util.run_closed_loop import run_single, run_multiple
+from plotting_common import plot_time_histories, save_figures
+from util.run_closed_loop import run_multiple
 from util.rw import load_object
 from simulation_parameters import SimulationParameters
 import matplotlib.pyplot as plt
@@ -16,14 +16,14 @@ ylim_amp = [0, 0.01]
 
 
 def exercise1(subexercise=2, n_freq_se_3=1,n_freq_se_4=1,n_TWL_se_4=1):
-    pylog.info("Ex 1")
+    pylog.info("Running Ex 1")
 
     if subexercise == 2:
+        # Run exercise 1.2 (2.2)
         pylog.info("Exercise 1.2")
         log_path = './logs/exercise1/exercise1_2/'
         os.makedirs(log_path, exist_ok=True)
 
-        # Run exercise 2.2 (1.2)
         pars_list = [
             SimulationParameters(
                 simulation_i=i,
@@ -124,14 +124,17 @@ def exercise1(subexercise=2, n_freq_se_3=1,n_freq_se_4=1,n_TWL_se_4=1):
         return
 
 def plot_E1_2(logdir):
-    n_DR = 3    # Number of damping ratios
+    pylog.info("Plotting Exercise 1.2")
+    # Plot the results of the simulations in exercise 2.2 (1.2)
+
+    n_DR = 3    # Number of different damping ratios
 
     for i in range(n_DR):
         # Load the controller object
         controller = load_object(logdir+"controller"+str(i))
         DR = controller.pars.damping_factor
 
-
+        # Plot joint angle evolution
         plt.figure('E2_2_Joint_Angles_DR_'+str(DR), figsize=[10, 10])
         plot_time_histories(
             controller.times,
@@ -148,14 +151,15 @@ def plot_E1_2(logdir):
         save_figures()
 
 def plot_amplitudes_E1_3(n_freq, start_idx, logdir, title):
-    # n_freq = number of frequnecies
-    # start_idx = index of the first controller to load
-    # logdir = directory where the simulation files are stored
-    # title = title of the plot
+    # Plot the results of the simulations in exercise 1.3 (2.3)
+    #   n_freq = number of frequnecies
+    #   start_idx = index of the first controller to load
+    #   logdir = directory where the simulation files are stored
+    #   title = title of the plot for saving
 
     n_DR = 3    # Number of damping ratios
 
-    # Step 1, for each damping ratio make a matrix with the mean amplitudes as a function of frequnecies
+    # For each damping ratio make a matrix with the mean amplitudes as a function of frequnecies
     mat_freq = np.zeros((n_freq,n_DR))
     mat_amp = np.zeros((n_freq,n_DR))
     DR = np.zeros((n_DR))
@@ -167,17 +171,17 @@ def plot_amplitudes_E1_3(n_freq, start_idx, logdir, title):
             # get the mean amplitude for each frequency
             mat_freq[j,i] = controller.pars.freq
             mat_amp[j,i] = np.mean(controller.metrics["mech_joint_amplitudes"])
-        # Example vector
+        # Define damping ratio vector
         DR[i] = controller.pars.damping_factor
 
     # Create an array of text containing legends for the damping ratios
     DR_legends = [f"DR = {value}" for value in DR]
 
-    # Step 2, plot each of the matrices in the same plot. Set x-axis as frequency and y-axis as mean amplitude. and y-axis as mean amplitude.
+    # Plot each of the matrices in the same plot. Set x-axis as frequency and y-axis as mean amplitude.
     plt.figure(title, figsize=[10, 10])
     plt.plot(mat_freq, mat_amp, marker='o', markersize=5, label=DR_legends)
 
-    # Add legends designating the damping ratio.
+    # Define plot properties
     plt.figure(title, figsize=[10, 10])
     plt.xlabel("Frequency [Hz]")
     plt.ylabel("Mean amplitude")
@@ -190,13 +194,14 @@ def plot_amplitudes_E1_3(n_freq, start_idx, logdir, title):
     save_figures()
 
 def plot_E1_4(n_freq, n_twl, start_idx, logdir, title):
-    # n_freq = number of frequnecies¨
-    # n_twl = number of TWL
-    # start_idx = index of the first controller to load
-    # logdir = directory where the simulation files are stored
-    # title = title of the plot
+    # Plot the results of the simulations in exercise 1.4 (2.4)
+    #   n_freq = number of frequnecies¨
+    #   n_twl = number of TWL
+    #   start_idx = index of the first controller to load
+    #   logdir = directory where the simulation files are stored
+    #   title = title of the plot for saving
 
-    # Step 1, for each damping ratio make a matrix with the mean amplitudes as a function of frequnecies
+    # For each twl-value make a matrix with the speed and CoT as a function of frequnecies
     mat_freq = np.zeros((n_freq,n_twl))
     mat_speed = np.zeros((n_freq,n_twl))
     mat_cot = np.zeros((n_freq,n_twl))
@@ -206,21 +211,21 @@ def plot_E1_4(n_freq, n_twl, start_idx, logdir, title):
         for j in range(n_freq):
             # load controller
             controller = load_object(logdir+"controller"+str(i*n_freq+j+start_idx))
-            # get the mean amplitude for each frequency
+            # get the mean fwd speed and CoT for each frequency
             mat_freq[j,i] = controller.pars.freq
             mat_speed[j,i] = np.mean(controller.metrics["mech_speed_fwd"])
             mat_cot[j,i] = np.mean(controller.metrics["mech_cot"])
-        # Example vector
+        # Define TWL vector
         TWL[i] = controller.pars.twl
 
-    # Create an array of text containing legends for the damping ratios
+    # Create an array of text containing legends for the twl-values
     TWL_legends = [f"TWL = {value:.2f}" for value in TWL]
 
-    # Step 2, plot each of the matrices in the same plot. Set x-axis as frequency and y-axis as mean amplitude. and y-axis as mean amplitude.
+    # Plot the speed and frequency matrices in the same plot. Set x-axis as frequency and y-axis as fwd speed.
     plt.figure(title+"_speed", figsize=[10, 10])
     plt.plot(mat_freq, mat_speed, marker='o', markersize=5, label=TWL_legends)
 
-    # Add legends designating the damping ratio.
+    # Define plot properties
     plt.figure(title+"_speed", figsize=[10, 10])
     plt.xlabel("Frequency [Hz]")
     plt.ylabel("Forward speed")
@@ -232,11 +237,11 @@ def plot_E1_4(n_freq, n_twl, start_idx, logdir, title):
 
     save_figures()
 
-    # Step 2, plot each of the matrices in the same plot. Set x-axis as frequency and y-axis as mean amplitude. and y-axis as mean amplitude.
+    # Plot the CoT and frequency matrices in the same plot. Set x-axis as frequency and y-axis as CoT.
     plt.figure(title+"_CoT", figsize=[10, 10])
     plt.plot(mat_freq, mat_cot, marker='o', markersize=5, label=TWL_legends)
 
-    # Add legends designating the damping ratio.
+    # Define plot properties
     plt.figure(title+"_CoT", figsize=[10, 10])
     plt.xlabel("Frequency [Hz]")
     plt.ylabel("Cost of Transport")
@@ -251,25 +256,29 @@ def plot_E1_4(n_freq, n_twl, start_idx, logdir, title):
 
 if __name__ == '__main__':
     # Chosen subexercise:
-    subexercise = 21 # 2, 3, 4, 21, 31, 41
+    subexercise = 2 # 2, 3, 4, 21, 31, 41
 
+    # Defining values to be examined:
     n_freq_se_3 = 80    # Number of frequencies to simulate in exercise 1.3
     n_freq_se_4 = 15    # Number of frequencies to simulate in exercise 1.4
     n_TWL_se_4 = 10     # Number of TWL to simulate in exercise 1.4
 
+    # Run the exercise
     exercise1(subexercise=subexercise,n_freq_se_3=n_freq_se_3,n_freq_se_4=n_freq_se_4,n_TWL_se_4=n_TWL_se_4)
 
-    # Plotting
+    # Plotting if chosen
     if subexercise == 21:
         plot_E1_2('./logs/exercise1/exercise1_2/')
     
     if subexercise == 31:
+        # Plotting the results of exercise 1.3 (2.3) for each combinaition of twl and environment
         plot_amplitudes_E1_3(n_freq_se_3, 0, './logs/exercise1/exercise1_3/', "E2_3_TWL_0_Env_air")
         plot_amplitudes_E1_3(n_freq_se_3, n_freq_se_3*3, './logs/exercise1/exercise1_3/', "E2_3_TWL_0.5_Env_air")
         plot_amplitudes_E1_3(n_freq_se_3, n_freq_se_3*6, './logs/exercise1/exercise1_3/', "E2_3_TWL_0_Env_water")
         plot_amplitudes_E1_3(n_freq_se_3, n_freq_se_3*9, './logs/exercise1/exercise1_3/', "E2_3_TWL_0.5_Env_water")
 
     if subexercise == 41:
+        # Plotting the results of exercise 1.4 (2.4) for each muscle model
         plot_E1_4(n_freq_se_4, n_TWL_se_4, 0, './logs/exercise1/exercise1_4/', "E2_4_FN_5000_ZC_1000_G0_419")
         plot_E1_4(n_freq_se_4, n_TWL_se_4, n_freq_se_4*n_TWL_se_4, './logs/exercise1/exercise1_4/', "E2_4_FN_7500_ZC_1000_G0_419")
         plot_E1_4(n_freq_se_4, n_TWL_se_4, 2*n_freq_se_4*n_TWL_se_4, './logs/exercise1/exercise1_4/', "E2_4_FN_10000_ZC_1000_G0_419")

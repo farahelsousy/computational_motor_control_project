@@ -83,14 +83,59 @@ class AbstractOscillatorController:
         This function is called each step to update the network states (amplitudes and phases).
         Here you have to implement the Ordinary Differential Equation (ODE)
         to compute the derivatives of network states.
-        For which you need CPG parameters  like nominal amplitudes, coupling weights, rates.
+        For which you need CPG parameters like nominal amplitudes, coupling weights, rates.
         The computation of the above-mentioned parameters can go in another custom function or
         be implemented here directly.
         """
+        # Define variables
         n_oscillators = self.n_oscillators
-        # Implement equation here
+        a = self.pars.amplitude_rates
+        G_amps = self.pars.cpg_amplitude_gain
+        G_freq = self.pars.cpg_frequency_gain
+        offset_freq = self.pars.cpg_frequency_offset
+        d = self.pars.drive
+        w_body2body = self.pars.weights_body2body
+        w_body2body_contralateral = self.pars.weights_body2body_segment
+        phi_body_total = self.phase_lag_body
+        n_joints = self.pars.n_joints_total
+
+        phases = state[0:n_oscillators]  # phase
+        amplitudes = state[n_oscillators:2*n_oscillators]  # amplitude
+
+        # Initialize dphases and damplitudes
         dphases = np.zeros(n_oscillators)
         damplitudes = np.zeros(n_oscillators)
+
+        # Compute frequency
+        f = G_freq * d + offset_freq
+
+        # Run loop for each oscillator to determine dtheta and dr
+        for i in range(n_oscillators):
+
+            # Define the dphases of the first terms of it's equation
+            dphases[i] = 2*np.pi*f
+
+            for j in range(n_oscillators):
+                # Compute the coupling weights and phaselag
+                if abs(i-j) == 2:
+                    w = w_body2body
+                    phi = np.sign(i-j)*phi_body_total/(n_joints-1)
+                elif (j-i) == 1 and i%2== 1:
+                    w = w_body2body_contralateral
+                    phi = np.sign(i-j)*np.pi
+                else:
+                    w = 0
+                    phi = 0
+
+                # Add the the second term of the eq. for dtheta for each j (the sum)
+                dphases[i] += amplitudes[j]*w*np.sin(phases[j]-phases[i]-phi)
+                
+            # Determine the nominal amplitude oscillator i (R[i])
+            R = G_amps[i//2] * d
+
+            # Compute the damplitudes
+            damplitudes[i] = a*(R-amplitudes[i])
+
         return np.concatenate([dphases, damplitudes])
 
     def motor_output(self, iteration):
